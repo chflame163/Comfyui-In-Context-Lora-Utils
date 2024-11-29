@@ -66,84 +66,121 @@ def fit_image(image,mask=None,output_length=1536,patch_mode="auto"):
         target_height = int(half_length)
     # print("patch_mode",patch_mode)
         
-    if image_width < target_width or image_height < target_height:
-        # print("image too small, resize to ", target_width, target_height)
-        if image_height > image_width:
-            new_width = int(image_width*(target_height/image_height))
-            new_height = target_height
-            # print(new_width,new_height)
-            image = resize(image, (new_width,new_height))
-            # print("mask",mask)
-            # print("mask.shape",mask.shape)
-            if mask is not None:
-                mask = resize(mask, (new_width,new_height),cv2.INTER_NEAREST_EXACT)
-        else:
-            new_width = target_width
-            new_height = int(image_height*(target_width/image_width))
-            # print(new_width,new_height)
-            image = resize(image, (new_width,new_height))
-            
-            # print("mask",mask)
-            # print("mask.shape",mask.shape)
-            if mask is not None:
-                mask = resize(mask, (new_width,new_height),cv2.INTER_NEAREST_EXACT)
-            
-        image_height, image_width, _ = image.shape
-        
-        diff_x = target_width - image_width
-        # print("diff_x",diff_x)
-        diff_y = target_height - image_height
-        # print("diff_y",diff_y)
-        pad_x = abs(diff_x) // 2
-        pad_y = abs(diff_y) // 2
-        # add white pixels for padding
-        if diff_x > 0 or diff_y > 0:
-            resized_image = cv2.copyMakeBorder(
-                image,
-                pad_y, abs(diff_y) - pad_y,
-                pad_x, abs(diff_x) - pad_x,
-                cv2.BORDER_CONSTANT, value=(255, 255, 255)
-            )
-            if mask is not None:
-                resized_mask = cv2.copyMakeBorder(
-                    mask,
-                    pad_y, abs(diff_y) - pad_y,
-                    pad_x, abs(diff_x) - pad_x,
-                    cv2.BORDER_CONSTANT, value=(0, 0, 0)
-                )
-        # crop extra pixels for square
-        else:
-            resized_image = image[pad_y:image_height-pad_y, pad_x:image_width-pad_x]
-            resized_mask = mask[pad_y:image_height-pad_y, pad_x:image_width-pad_x]
-        
-    else:
-        # get resized image size
-        image_height, image_width, _ = image.shape
-        # print("new size",image_height, image_width)
-        # simple center crop
-        scale_ratio = target_width / target_height
-        image_ratio = image_width / image_height
-        # referenced kohya ss code
-        if image_ratio > scale_ratio: 
-            up_scale = image_height / target_height
-        else:
-            up_scale = image_width / target_width
-        expanded_closest_size = (int(target_width * up_scale + 0.5), int(target_height * up_scale + 0.5))
-        diff_x = abs(expanded_closest_size[0] - image_width)
-        diff_y = abs(expanded_closest_size[1] - image_height)
-        
-        crop_x =  diff_x // 2
-        crop_y =  diff_y // 2
-        cropped_image = image[crop_y:image_height-crop_y, crop_x:image_width-crop_x]
-        resized_image = resize(cropped_image, (target_width,target_height))
-        
-        if mask is not None:
-            # print("mask",mask)
-            # print("mask.shape",mask.shape)
-            cropped_mask = mask[crop_y:image_height-crop_y, crop_x:image_width-crop_x]
-            resized_mask = resize(cropped_mask, (target_width,target_height),cv2.INTER_NEAREST_EXACT)
+    # if image_width < target_width or image_height < target_height:
+    #     # print("image too small, resize to ", target_width, target_height)
+    #     if image_height > image_width:
+    #         new_width = int(image_width*(target_height/image_height))
+    #         new_height = target_height
+    #         # print(new_width,new_height)
+    #         image = resize(image, (new_width,new_height))
+    #         # print("mask",mask)
+    #         # print("mask.shape",mask.shape)
+    #         if mask is not None:
+    #             mask = resize(mask, (new_width,new_height),cv2.INTER_NEAREST_EXACT)
+    #     else:
+    #         new_width = target_width
+    #         new_height = int(image_height*(target_width/image_width))
+    #         # print(new_width,new_height)
+    #         image = resize(image, (new_width,new_height))
+    #
+    #         # print("mask",mask)
+    #         # print("mask.shape",mask.shape)
+    #         if mask is not None:
+    #             mask = resize(mask, (new_width,new_height),cv2.INTER_NEAREST_EXACT)
+    #
+    #     image_height, image_width, _ = image.shape
+    #
+    #     diff_x = target_width - image_width
+    #     # print("diff_x",diff_x)
+    #     diff_y = target_height - image_height
+    #     # print("diff_y",diff_y)
+    #     pad_x = abs(diff_x) // 2
+    #     pad_y = abs(diff_y) // 2
+    #     # add white pixels for padding
+    #     if diff_x > 0 or diff_y > 0:
+    #         resized_image = cv2.copyMakeBorder(
+    #             image,
+    #             pad_y, abs(diff_y) - pad_y,
+    #             pad_x, abs(diff_x) - pad_x,
+    #             cv2.BORDER_CONSTANT, value=(255, 255, 255)
+    #         )
+    #         if mask is not None:
+    #             resized_mask = cv2.copyMakeBorder(
+    #                 mask,
+    #                 pad_y, abs(diff_y) - pad_y,
+    #                 pad_x, abs(diff_x) - pad_x,
+    #                 cv2.BORDER_CONSTANT, value=(0, 0, 0)
+    #             )
+    #     # crop extra pixels for square
+    #     else:
+    #         resized_image = image[pad_y:image_height-pad_y, pad_x:image_width-pad_x]
+    #         resized_mask = mask[pad_y:image_height-pad_y, pad_x:image_width-pad_x]
+    #
+    # else:
+    #     # get resized image size
+    #     image_height, image_width, _ = image.shape
+    #     # print("new size",image_height, image_width)
+    #     # simple center crop
+    #     scale_ratio = target_width / target_height
+    #     image_ratio = image_width / image_height
+    #     # referenced kohya ss code
+    #     if image_ratio > scale_ratio:
+    #         up_scale = image_height / target_height
+    #     else:
+    #         up_scale = image_width / target_width
+    #     expanded_closest_size = (int(target_width * up_scale + 0.5), int(target_height * up_scale + 0.5))
+    #     diff_x = abs(expanded_closest_size[0] - image_width)
+    #     diff_y = abs(expanded_closest_size[1] - image_height)
+    #
+    #     crop_x =  diff_x // 2
+    #     crop_y =  diff_y // 2
+    #     cropped_image = image[crop_y:image_height-crop_y, crop_x:image_width-crop_x]
+    #     resized_image = resize(cropped_image, (target_width,target_height))
+    #
+    #     if mask is not None:
+    #         # print("mask",mask)
+    #         # print("mask.shape",mask.shape)
+    #         cropped_mask = mask[crop_y:image_height-crop_y, crop_x:image_width-crop_x]
+    #         resized_mask = resize(cropped_mask, (target_width,target_height),cv2.INTER_NEAREST_EXACT)
 
-    if mask is None:
+    # 等比例缩放并填充逻辑
+    scale_ratio = min(target_width / image_width, target_height / image_height)
+
+    # 计算缩放后的尺寸
+    new_width = int(image_width * scale_ratio)
+    new_height = int(image_height * scale_ratio)
+
+    # 缩放图片
+    image = resize(image, (new_width, new_height))
+
+    if mask is not None:
+        mask = resize(mask, (new_width, new_height), cv2.INTER_NEAREST_EXACT)
+
+    # 计算填充的差值
+    diff_x = target_width - new_width
+    diff_y = target_height - new_height
+
+    # 计算填充上下左右的像素
+    pad_x = diff_x // 2
+    pad_y = diff_y // 2
+
+    # 添加白色填充到图片，黑色填充到掩码
+    resized_image = cv2.copyMakeBorder(
+        image,
+        pad_y, diff_y - pad_y,
+        pad_x, diff_x - pad_x,
+        cv2.BORDER_CONSTANT, value=(255, 255, 255)
+    )
+
+    if mask is not None:
+        resized_mask = cv2.copyMakeBorder(
+            mask,
+            pad_y, diff_y - pad_y,
+            pad_x, diff_x - pad_x,
+            cv2.BORDER_CONSTANT, value=(0, 0, 0)
+        )
+
+    else:
         resized_mask = torch.zeros((target_width,target_height))
     
     return resized_image, resized_mask, target_width, target_height, patch_mode
